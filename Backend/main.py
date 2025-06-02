@@ -75,26 +75,6 @@ def extract_document_text(file_content, filename):
     else:
         raise ValueError(f"Unsupported file type: {file_extension}")
     
-
-
-def AI_analysis_results(system_prompt, User_models,api_key):
-    """Generate response using Gemini"""
-    try:
-        client = genai.Client(api_key=api_key)
-        
-        full_prompt = f"""
-    Question: {system_prompt}
-"""
-        
-        response = client.models.generate_content(
-            model=User_models, 
-            contents=full_prompt
-        )
-        
-        return response.text
-    except Exception as e:
-        print(f"Error generating response: {e}")
-        return "I'm sorry, I couldn't generate a response. Please try again."
     
 
     
@@ -133,7 +113,12 @@ def CreatePrompt(system_prompt: str, istructions: str, example_output: str,model
         print(response.text,'--------------------prompt response')
         return response.text
     except Exception as e:
-        print(f"Error generating response: {e}")
+        error_message = str(e).lower()
+        print("Exception caught:", error_message)
+
+        if "api key not valid" in error_message or "invalid_argument" in error_message or "api_key_invalid" in error_message:
+            return {"error": "Invalid API Key"}
+
     return "I'm sorry, I couldn't generate a response. Please try again."
 
 
@@ -161,15 +146,6 @@ async def upload_and_ask(
         
         document_text = extract_document_text(file_content, file.filename)  
         
-        # 
-        
-        # return JSONResponse({
-        #     "success": True,
-        #     "document_name": file.filename,
-        #     "system_prompt": system_prompt,
-        #     "answer": response,
-        #     "document_length": len(document_text)
-        # })
         prompt = CreatePrompt(system_prompt, istructions, example_output,models,api_key,document_text)
         
 
@@ -186,9 +162,25 @@ async def upload_and_ask(
         return JSONResponse({"error": f"An error occurred: {str(e)}"}, status_code=500)
 
 
-
-
-
+def AI_analysis_results(system_prompt, User_models,api_key):
+    """Generate response using Gemini"""
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        full_prompt = f"""
+    Question: {system_prompt}
+"""
+        
+        response = client.models.generate_content(
+            model=User_models, 
+            contents=full_prompt
+        )
+        
+        return response.text
+    except Exception as e:
+        print(f"Error generating response: {e}")
+        return "I'm sorry, I couldn't generate a response. Please try again."
+    
 
 @app.post("/generate_response")
 async def generate_response(
@@ -219,6 +211,135 @@ async def generate_response(
     except Exception as e:
         return JSONResponse({"error": f"An error occurred: {str(e)}"}, status_code=500)
 
+
+
+
+def Optimize_analysis_results(response_result, User_models,api_key):
+    """Generate response using Gemini"""
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        full_prompt = f"""
+You are a highly skilled editor and prompt optimizer. Your task is to refine and optimize the following prompt data to enhance its clarity, conciseness, structure, and effectiveness. Here is the prompt data you will be working with:
+ 
+<prompt_data>
+{response_result}
+</prompt_data>
+ 
+Your objective is to improve the given prompt while adhering to these key principles:
+ 
+1. Preserve all original information and context
+2. Do not remove any meaningful content
+3. Do not hallucinate or fabricate new information
+4. Only rephrase or restructure existing content to make it more precise and professional
+ 
+Follow these guidelines when optimizing the prompt:
+ 
+1. Enhance clarity: Ensure each sentence is clear and unambiguous
+2. Improve conciseness: Remove redundant words or phrases without losing meaning
+3. Refine structure: Organize information logically and coherently
+4. Boost effectiveness: Make the prompt more compelling and action-oriented
+5. Polish language: Correct any grammatical errors and improve overall readability
+6. Maintain professionalism: Use a formal, professional tone throughout
+ 
+Your output should meet the following requirements:
+ 
+1. Retain all original context and details from the input prompt
+2. Contain no assumptions or information beyond what was provided
+3. Demonstrate improved clarity, flow, grammar, and effectiveness
+4. Be written in clear, professional English
+"""
+        
+        response = client.models.generate_content(
+            model=User_models, 
+            contents=full_prompt
+        )
+        
+        return response.text
+    except Exception as e:
+        print(f"Error generating response: {e}")
+        return "I'm sorry, I couldn't generate a response. Please try again."
+    
+
+
+@app.post("/optimize_response")
+async def optimize_response(
+    response_result: str = Form(...),
+    models:str = Form(...),
+    api_key:str = Form(...)
+):
+    """Upload a document and ask a question about it in one step"""
+    try:
+        
+        if api_key is None:
+            return JSONResponse({"error":" Api key is missing"})
+
+        if response_result is None:
+            return JSONResponse({"error":" enter prompt"})
+        
+        response=Optimize_analysis_results(response_result,models,api_key)
+        
+
+
+        return JSONResponse({
+           "response":response
+        })
+    
+
+    except ValueError as ve:
+        return JSONResponse({"error": str(ve)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": f"An error occurred: {str(e)}"}, status_code=500)
+
+
+
+def Validate_API_KEY(model, api_key):
+    
+    try:
+        client = genai.Client(api_key=api_key)
+
+        response = client.models.generate_content(
+            model=model,
+            contents="hello"
+        )
+        return response.text
+
+    except Exception as e:
+        error_message = str(e).lower()
+
+        if "api key not valid" in error_message or "invalid_argument" in error_message or "api_key_invalid" in error_message:
+            return {"error": "Invalid API Key"}
+        
+        if "resource_exhausted" in error_message and "free_tier" in error_message:
+            return {"error": "This API key is not valid for paid or pro models."}
+        else:
+            return {"error": f"An unexpected error occurred: {e}"}
+
+
+
+@app.post("/Validate_key")
+async def Validate_key(
+    models:str = Form(...),
+    api_key:str = Form(...)
+):
+    try:
+        if api_key is None:
+            return JSONResponse({"error":" Api key is missing"})
+
+        if models is None:
+            return JSONResponse({"error":" enter models name"})
+        
+        response=Validate_API_KEY(models,api_key)
+        
+        return JSONResponse({
+           "response":response
+        })
+    
+
+    except ValueError as ve:
+        return JSONResponse({"error": str(ve)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": f"An error occurred: {str(e)}"}, status_code=500)
 
 
 @app.get("/")
