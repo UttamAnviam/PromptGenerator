@@ -8,12 +8,12 @@ from typing import Optional
 import uvicorn
 from google import genai
 from fastapi.middleware.cors import CORSMiddleware
+from google.genai import types
+
+
 
 # Load environment variables from .env
 load_dotenv()
-
-
-
 
 # Fetch the key from environment
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -27,7 +27,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  
+    allow_origins=["http://localhost:8080","http://localhost:8081"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,7 +78,7 @@ def extract_document_text(file_content, filename):
     
 
     
-def CreatePrompt(system_prompt: str, istructions: str, example_output: str,model: str, api_key: str,document_text:str):
+def CreatePrompt(system_prompt: str, istructions: str, example_output: str,model: str, api_key: str,document_text:str,max_tokens,ai_temperature):
     print(system_prompt,'system_prompt',istructions,'istructions',example_output,'example_output',model,'model',api_key)
     try:
         client = genai.Client(api_key=api_key)
@@ -108,7 +108,10 @@ def CreatePrompt(system_prompt: str, istructions: str, example_output: str,model
 
         response = client.models.generate_content(
             model=model, 
-            contents=prompt
+            contents=prompt,
+           config=types.GenerateContentConfig(
+               max_output_tokens=int(max_tokens),
+                temperature=float(ai_temperature))
         )
         print(response.text,'--------------------prompt response')
         return response.text
@@ -130,23 +133,28 @@ async def upload_and_ask(
     istructions: str = Form(...),
     example_output: str = Form(...),
     models:str = Form(...),
-    api_key:str = Form(...)
+    api_key:str = Form(...),
+    max_tokens: str = Form(...),
+    ai_temperature: str = Form(...)
 ):
+    
     """Upload a document and ask a question about it in one step"""
     try:
+        print(max_tokens,'--------------max_tokensmax_tokensmax_tokensmax_tokens')
+        print(ai_temperature,'-------------ai_temperatureai_temperatureai_temperature')
         if not any(file.filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
             return JSONResponse(
                 {"error": "Unsupported file type. Please upload PDF, TXT, or DOCX files."}, 
                 status_code=400
             )
-        
+
         if api_key is None:
             return JSONResponse({"error":" Api key is missing"})
         file_content = await file.read()
         
         document_text = extract_document_text(file_content, file.filename)  
         
-        prompt = CreatePrompt(system_prompt, istructions, example_output,models,api_key,document_text)
+        prompt = CreatePrompt(system_prompt, istructions, example_output,models,api_key,document_text,max_tokens,ai_temperature)
         
 
         return JSONResponse({
@@ -162,7 +170,7 @@ async def upload_and_ask(
         return JSONResponse({"error": f"An error occurred: {str(e)}"}, status_code=500)
 
 
-def AI_analysis_results(system_prompt, User_models,api_key):
+def AI_analysis_results(system_prompt, User_models,api_key,max_tokens,ai_temperature):
     """Generate response using Gemini"""
     try:
         client = genai.Client(api_key=api_key)
@@ -173,7 +181,11 @@ def AI_analysis_results(system_prompt, User_models,api_key):
         
         response = client.models.generate_content(
             model=User_models, 
-            contents=full_prompt
+            contents=full_prompt,
+              config=types.GenerateContentConfig(
+                max_output_tokens=int(max_tokens),
+                temperature=float(ai_temperature))
+            
         )
         
         return response.text
@@ -186,7 +198,9 @@ def AI_analysis_results(system_prompt, User_models,api_key):
 async def generate_response(
     prompt_result: str = Form(...),
     models:str = Form(...),
-    api_key:str = Form(...)
+    api_key:str = Form(...),
+    max_tokens: str = Form(...),
+    ai_temperature: str = Form(...)
 ):
     """Upload a document and ask a question about it in one step"""
     try:
@@ -197,7 +211,7 @@ async def generate_response(
         if prompt_result is None:
             return JSONResponse({"error":" enter prompt"})
         
-        response=AI_analysis_results(prompt_result,models,api_key)
+        response=AI_analysis_results(prompt_result,models,api_key,max_tokens,ai_temperature)
         
 
 
@@ -214,7 +228,7 @@ async def generate_response(
 
 
 
-def Optimize_analysis_results(response_result, User_models,api_key):
+def Optimize_analysis_results(response_result, User_models,api_key,max_tokens,ai_temperature):
     """Generate response using Gemini"""
     try:
         client = genai.Client(api_key=api_key)
@@ -252,7 +266,10 @@ Your output should meet the following requirements:
         
         response = client.models.generate_content(
             model=User_models, 
-            contents=full_prompt
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
+                 max_output_tokens=int(max_tokens),
+                temperature=float(ai_temperature))
         )
         
         return response.text
@@ -266,7 +283,9 @@ Your output should meet the following requirements:
 async def optimize_response(
     response_result: str = Form(...),
     models:str = Form(...),
-    api_key:str = Form(...)
+    api_key:str = Form(...),
+    max_tokens: str = Form(...),
+    ai_temperature: str = Form(...)
 ):
     """Upload a document and ask a question about it in one step"""
     try:
@@ -277,7 +296,7 @@ async def optimize_response(
         if response_result is None:
             return JSONResponse({"error":" enter prompt"})
         
-        response=Optimize_analysis_results(response_result,models,api_key)
+        response=Optimize_analysis_results(response_result,models,api_key,max_tokens,ai_temperature)
         
 
 

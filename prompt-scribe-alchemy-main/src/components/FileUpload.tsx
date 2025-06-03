@@ -2,6 +2,11 @@
 import React, { useState, useRef } from 'react';
 import { Upload, File, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import {Info} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"; // Update this import path based on your project
+import { Button } from '@/components/ui/button';
+
+
 
 interface FileUploadProps {
   onFileSelect: (file: File | null) => void;
@@ -12,6 +17,7 @@ interface FileUploadProps {
 const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, selectedFile,onClearAll }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -66,7 +72,42 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, selectedFile,onCl
     <Card className="glass-effect">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">Document Upload</h3>
+          <div className="flex items-center gap-2 relative ">
+            <h3 className="text-lg font-semibold text-gray-800">Document Upload</h3>
+            <Info
+                className="w-5 h-5 text-blue-500 cursor-pointer"
+                onClick={() => setIsModalOpen(true)}
+              />
+              
+         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Info className="h-5 w-5 text-blue-500" />
+              <span>Document Preview</span>
+            </DialogTitle>
+            <DialogDescription>
+              View reference or supporting material related to this document.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            <iframe
+              src="public/info.png" // If it's a PDF, or /info.png for image
+              title="Document Preview"
+              className="w-full h-[500px] border border-gray-300 rounded"
+            ></iframe>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+          </div>
+
           {selectedFile && (
             <button
               onClick={handleClearAll}
@@ -76,6 +117,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, selectedFile,onCl
             </button>
           )}
         </div>
+
+
         
         {!selectedFile ? (
           <div

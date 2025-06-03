@@ -1,7 +1,9 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, FileText, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MessageSquare, FileText, Target, Mic } from 'lucide-react';
+import DictaphoneModal from './DictaphoneModal';
 
 interface PromptEditorProps {
   prompt: string;
@@ -20,6 +22,9 @@ const PromptEditor: React.FC<PromptEditorProps> = ({
   exampleOutput,
   onExampleOutputChange
 }) => {
+   const [speechModalOpen, setSpeechModalOpen] = React.useState(false);
+  const [modalType, setModalType] = React.useState<'prompt' | 'instructions' | 'example'>('prompt');
+  
   const defaultPrompts = [
     "Analyze this document and extract key insights, themes, and important information.",
     "Summarize the main points and provide actionable recommendations.",
@@ -43,16 +48,62 @@ const PromptEditor: React.FC<PromptEditorProps> = ({
     "## Risk Assessment\n**High Priority Issues:**\n- Issue 1\n- Issue 2\n\n**Medium Priority Issues:**\n- Issue 3\n\n**Recommendations:**\n- Solution 1\n- Solution 2"
   ];
 
+  
+ const openSpeechModal = (type: 'prompt' | 'instructions' | 'example') => {
+    setModalType(type);
+    setSpeechModalOpen(true);
+  };
+
+  const handleSpeechApply = (text: string) => {
+    switch (modalType) {
+      case 'prompt':
+        onPromptChange(text);
+        break;
+      case 'instructions':
+        onInstructionsChange(text);
+        break;
+      case 'example':
+        onExampleOutputChange(text);
+        break;
+    }
+  };
+
+  const getModalTitle = () => {
+    switch (modalType) {
+      case 'prompt':
+        return 'System Prompt';
+      case 'instructions':
+        return 'Instructions';
+      case 'example':
+        return 'Example Output';
+      default:
+        return '';
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       {/* System Prompt Section */}
-      <Card className="glass-effect">
+    <Card className="glass-effect">
         <div className="p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <MessageSquare className="h-5 w-5 text-blue-500" />
-            <h3 className="text-lg font-semibold text-gray-800">System Prompt</h3>
+          {/* Header with icon and mic button */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="h-5 w-5 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-800">System Prompt</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openSpeechModal('prompt')}
+              className="flex items-center space-x-1"
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
           </div>
-          
+
+          {/* Prompt input and quick prompts */}
           <div className="space-y-4">
             <Textarea
               value={prompt}
@@ -60,7 +111,7 @@ const PromptEditor: React.FC<PromptEditorProps> = ({
               placeholder="Enter your custom prompt here..."
               className="min-h-[120px] resize-none border-gray-200 focus:border-blue-400 focus:ring-blue-400"
             />
-            
+
             <div className="space-y-2">
               <p className="text-sm font-medium text-gray-700 mb-2">Quick prompts:</p>
               <div className="grid gap-2">
@@ -79,12 +130,23 @@ const PromptEditor: React.FC<PromptEditorProps> = ({
         </div>
       </Card>
 
+
       {/* Instructions Section */}
       <Card className="glass-effect">
         <div className="p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <FileText className="h-5 w-5 text-green-500" />
-            <h3 className="text-lg font-semibold text-gray-800">Instructions</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-green-500" />
+              <h3 className="text-lg font-semibold text-gray-800">Instructions</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openSpeechModal('instructions')}
+              className="flex items-center space-x-1"
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
           </div>
           
           <div className="space-y-4">
@@ -116,9 +178,19 @@ const PromptEditor: React.FC<PromptEditorProps> = ({
       {/* Example Output Section */}
       <Card className="glass-effect">
         <div className="p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Target className="h-5 w-5 text-purple-500" />
-            <h3 className="text-lg font-semibold text-gray-800">Example Output</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <Target className="h-5 w-5 text-purple-500" />
+              <h3 className="text-lg font-semibold text-gray-800">Example Output</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openSpeechModal('example')}
+              className="flex items-center space-x-1"
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
           </div>
           
           <div className="space-y-4">
@@ -146,6 +218,15 @@ const PromptEditor: React.FC<PromptEditorProps> = ({
           </div>
         </div>
       </Card>
+
+      <DictaphoneModal
+        isOpen={speechModalOpen}
+        onClose={() => setSpeechModalOpen(false)}
+        onApply={handleSpeechApply}
+        title={getModalTitle()}
+      />
+
+
     </div>
   );
 };

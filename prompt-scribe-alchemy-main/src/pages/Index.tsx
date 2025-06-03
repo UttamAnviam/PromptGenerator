@@ -2,7 +2,7 @@
 import React, {useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Brain, Sparkles } from 'lucide-react';
+import { Brain, Sparkles, Mic, MicOff } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import ModelSelector from '@/components/ModelSelector';
 import PromptEditor from '@/components/PromptEditor';
@@ -10,7 +10,6 @@ import ResultsDisplay from '@/components/ResultsDisplay';
 import axios from 'axios';
 import ApiKeyManager from '@/components/ApiKeyManager';
 import GeneratedPromptResult from '@/components/GeneratedPromptResult';
-import { connected } from 'process';
 
 
 
@@ -39,9 +38,18 @@ const [editableResult, setEditableResult] = useState('');
 const [ForDataResult,setForDataResult]= useState(''); 
 const [keyError, setKeyError]=useState(true); 
 
+localStorage.setItem('selectedModel', selectedModel.trim());
   const api_key=localStorage.getItem('gemini-api-key')
+  const models=localStorage.getItem('selectedModel')
+  const max_tokens=localStorage.getItem('ai-max-tokens')
+  const ai_temperature=localStorage.getItem('ai-temperature')
+
+
+
  if (!api_key) {
-  toast.error('Please enter an API KEY');
+  toast.error('Please enter an API KEY',{
+  className: 'toast-error',
+});
 }
 
   const extractTextFromFile = async (file: File): Promise<string> => {
@@ -67,7 +75,6 @@ const [keyError, setKeyError]=useState(true);
   };
 
   const handleGenerateResponse = async (prompt?:string) => {
-   
     if (!selectedFile) {
       toast.error('Please select a document first');
       return;
@@ -182,16 +189,60 @@ Model: ${selectedModel}`;
     setExampleOutput(newExampleOutput);
   };
 
+ const handleUpdateGeneratedPromptResult = (newResult: string) => {
+    setGeneratedPromptResult(newResult);
+  };
 
+
+
+
+
+  const Validate_Key = async () => {
+  const formData = new FormData();
+  formData.append('models', selectedModel);  
+  formData.append('api_key', api_key);
+
+  try {
+    const res = await axios.post('http://127.0.0.1:8000/Validate_key', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    setIsLoading(false)
+    console.log(res.data?.response,'-----------sghdgshhsg')
+    if (res.data?.response?.error)
+    {
+      toast.error(res.data?.response?.error);
+      setResult('')
+
+    }
+    else{
+        await SendData();
+        
+    }
+   
+    
+  } catch (error) {
+    console.error('Error uploading:', error);
+  }
+};
+ 
 
   const SendData = async () => {
   const formData = new FormData();
+  console.log(prompt,'-------------system_prompt')
+  console.log(instructions,'-============instructionsinstructionsinstructions')
+  console.log(exampleOutput,'-------------example_outputexample_outputexample_outputexample_output')
   formData.append('file', selectedFile);
   formData.append('system_prompt', prompt);
   formData.append('models', selectedModel);  
   formData.append('example_output', exampleOutput);
   formData.append('istructions', instructions);
   formData.append('api_key', api_key);
+  formData.append('max_tokens', max_tokens);
+  formData.append('ai_temperature', ai_temperature);
+
+  
 
   try {
     const res = await axios.post('http://127.0.0.1:8000/chat', formData, {
@@ -200,6 +251,7 @@ Model: ${selectedModel}`;
       },
     });
     setIsLoading(false)
+    toast.success('Optimized prompt generated! Click "Generate Response" to analyze the document.');
     setResult(res.data?.prompt)
    
     
@@ -222,6 +274,8 @@ Model: ${selectedModel}`;
     formData.append('prompt_result', prompt);
     formData.append('models', selectedModel);  
     formData.append('api_key', api_key);
+     formData.append('max_tokens', max_tokens);
+    formData.append('ai_temperature', ai_temperature);
 
     try {
       const res = await axios.post('http://127.0.0.1:8000/generate_response', formData, {
@@ -272,6 +326,7 @@ Note: This is a demonstration of the AI document analysis workflow. In a product
   };
 
   const handleAnalyze = async () => {
+    
     if (!selectedFile) {
       toast.error('Please select a document first');
       return;
@@ -282,17 +337,15 @@ Note: This is a demonstration of the AI document analysis workflow. In a product
       return;
     }
 
-
+   
     setIsGeneratedPromptLoading(true);
     setGeneratedPromptResult('');
 
     try {
       // Generate optimized prompt first
-      await SendData();
-    
-      // const optimizedPrompt = await simulateGeneratedPrompt();
-      // setGeneratedPromptResult(optimizedPrompt);
-      toast.success('Optimized prompt generated! Click "Generate Response" to analyze the document.');
+     GotoTOP(); 
+      await Validate_Key()
+      //
     } catch (error) {
       console.error('Prompt generation failed:', error);
       toast.error('Failed to generate optimized prompt. Please try again.');
@@ -300,14 +353,16 @@ Note: This is a demonstration of the AI document analysis workflow. In a product
       setIsGeneratedPromptLoading(false);
       
     }
-    
-  
-
   };
+
+  const GotoTOP = () => {
+  console.log('Scrolling to top');
+  window.scrollTo(0, 0);
+};
+
 
     const handleClearAll = () => {
       window.location.reload();
-
     setSelectedFile(null);
     setGeneratedPromptResult('');
     setResult('');
@@ -332,7 +387,7 @@ Note: This is a demonstration of the AI document analysis workflow. In a product
 
 useEffect(() => {
   setEditableResult(result);
-   
+   GotoTOP();
 }, []);
 
   return (
@@ -345,7 +400,7 @@ useEffect(() => {
             <div className="flex items-center justify-center space-x-3">
               <div className="relative">
                 <Brain className="h-12 w-12 text-blue-600" />
-                <Sparkles className="h-6 w-6 text-purple-500 absolute -top-1 -right-1" />
+                <Sparkles className="h-6 w-6 text-purple-500 absolute -top-1 " />
               </div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                HealthOrbit AI Prompt Generator
@@ -362,9 +417,9 @@ useEffect(() => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" >
           {/* Left Column - Controls */}
-          <div className="space-y-6">
+          <div className="space-y-6" >
             <FileUpload 
               onFileSelect={setSelectedFile} 
               selectedFile={selectedFile}
@@ -375,6 +430,8 @@ useEffect(() => {
               selectedModel={selectedModel} 
               onModelChange={setSelectedModel}
             />
+
+             
             
             <PromptEditor
             prompt={prompt}
@@ -411,7 +468,7 @@ useEffect(() => {
           
               <div className="space-y-6">
            
-                <GeneratedPromptResult
+              <GeneratedPromptResult
               result={result}
               setResult={setEditableResult}
               isLoading={isGeneratedPromptLoading}
@@ -419,9 +476,8 @@ useEffect(() => {
               isGenerateDisabled={!result.trim() || !selectedFile || isGeneratedPromptLoading}
               keyError={keyError}
               setKeyError={setKeyError} 
+              onUpdateResult={handleUpdateGeneratedPromptResult}
             />
-
-            
 
 
             <ResultsDisplay result={ForDataResult} isLoading={isLoading} />
@@ -438,3 +494,5 @@ useEffect(() => {
 };
 
 export default Index;
+
+

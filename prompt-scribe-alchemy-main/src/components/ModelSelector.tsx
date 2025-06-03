@@ -10,39 +10,65 @@ interface ModelSelectorProps {
   onModelChange: (model: string) => void;
 }
 
+
 const models = [
   {
     id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
+    name: ( <span className="flex items-center gap-2">
+    Gemini 1.5 Flash
+    <span className="text-green-600 text-sm font-medium bg-green-100 px-2 py-0.5 rounded">
+      Free
+    </span>
+  </span>),
     description: 'Fast and efficient for quick analysis',
     icon: Zap,
     color: 'text-yellow-500'
   },
   {
     id: 'gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
-    description: 'Advanced reasoning for complex documents',
+    name: ( <span className="flex items-center gap-2">
+    Gemini 1.5 Pro
+    <span className="text-red-600 text-sm font-medium bg-red-100 px-2 py-0.5 rounded">
+      Paid
+    </span>
+  </span>),
+    description: 'Advanced reasoning for complex documents ',
     icon: Brain,
     color: 'text-blue-500'
   },
   {
     id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
+    name: ( <span className="flex items-center gap-2">
+    Gemini 2.0 Flash
+    <span className="text-green-600 text-sm font-medium bg-green-100 px-2 py-0.5 rounded">
+      Free
+    </span>
+  </span>),
     description: 'Next-generation speed with enhanced capabilities',
     icon: Rocket,
     color: 'text-orange-500'
   },
   {
     id: 'gemini-2.5-flash-preview-05-20',
-    name: 'Gemini 2.5 Flash Preview 05-20',
+    name:( <span className="flex items-center gap-2">
+    Gemini 2.5 Flash Preview 05-20
+    <span className="text-green-600 text-sm font-medium bg-green-100 px-2 py-0.5 rounded">
+      Free
+    </span>
+  </span>),
     description: 'Ultra-fast processing with cutting-edge AI',
     icon: Sparkles,
     color: 'text-pink-500'
   },
   {
     id: 'gemini-2.5-pro-preview-05-06',
-    name: 'Gemini 2.5 Pro Preview 05-06',
-    description: 'Most advanced model for complex reasoning',
+    name: ( <span className="flex items-center gap-2">
+    Gemini 2.5 Pro Preview 05-06
+    <span className="text-red-600 text-sm font-medium bg-red-100 px-2 py-0.5 rounded">
+      Paid
+    </span>
+  </span>),
+    description: 'Most advanced model for complex reasoning ',
     icon: Crown,
     color: 'text-purple-600'
   }
